@@ -1,0 +1,39 @@
+backend:
+  name: git-gateway
+  branch: main
+
+media_folder: "public/content/uploads"
+public_folder: "/content/uploads"
+
+publish_mode: simple
+
+collections:
+  - name: "posts"
+    label: "Posts"
+    folder: "public/content/posts"
+    create: true
+    slug: "{{slug}}"
+    extension: "json"
+    format: "json"
+    fields:
+      - { label: "Slug", name: "slug", widget: "string" }
+      - { label: "Category", name: "category", widget: "string", default: "Tools" }
+      - { label: "Date", name: "date", widget: "string", default: "Dec 27, 2025" }
+      - { label: "Read time", name: "readTime", widget: "string", default: "10 min" }
+      - { label: "Image URL", name: "imageUrl", widget: "string", required: false }
+
+      - label: "English"
+        name: "en"
+        widget: "object"
+        fields:
+          - { label: "Title (EN)", name: "title", widget: "string" }
+          - { label: "Excerpt (EN)", name: "excerpt", widget: "text" }
+          - { label: "Content (EN)", name: "content", widget: "text" }
+
+      - label: "Persian"
+        name: "fa"
+        widget: "object"
+        fields:
+          - { label: "Title (FA)", name: "title", widget: "string" }
+          - { label: "Excerpt (FA)", name: "excerpt", widget: "text" }
+          - { label: "Content (FA)", name: "content", widget: "text" }
