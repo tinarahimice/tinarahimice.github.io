@@ -3,6 +3,14 @@ import { ExternalLink, Calendar } from 'lucide-react';
 const projects = [
   {
     id: 1,
+    title: 'Intelligent Order Processing Agent',
+    description: 'Designed and implemented AI agents to automate order processing workflows. Integrated with existing systems to improve reliability and reduce manual intervention.',
+    year: '2025',
+    category: 'AI Agent',
+    tags: ['Python', 'LangChain', 'FastAPI', 'MongoDB', 'Selenium'],
+  },
+  {
+    id: 2,
     title: 'LLM-based Security Vulnerability Detection',
     description: 'Bachelor\'s thesis project focusing on using large language models to detect security vulnerabilities in code. Implemented fine-tuning techniques and achieved significant improvement in detection accuracy.',
     year: '2024',
@@ -10,20 +18,12 @@ const projects = [
     tags: ['Python', 'LLMs', 'Security', 'NLP'],
   },
   {
-    id: 2,
+    id: 3,
     title: 'Persian Text Classification System',
     description: 'Developed a comprehensive NLP pipeline for Persian text classification using transformer models. Implemented custom word embeddings optimized for Persian language.',
     year: '2024',
     category: 'NLP',
     tags: ['Python', 'Transformers', 'Hazm', 'PyTorch'],
-  },
-  {
-    id: 3,
-    title: 'Intelligent Order Processing Agent',
-    description: 'Designed and implemented AI agents to automate order processing workflows. Integrated with existing systems to improve reliability and reduce manual intervention.',
-    year: '2024',
-    category: 'AI Agent',
-    tags: ['Python', 'LangChain', 'FastAPI', 'MongoDB'],
   },
   {
     id: 4,
