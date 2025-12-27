@@ -116,15 +116,11 @@ function splitWithCode(content: string, startMarker: string, endMarker: string) 
 }
 
 function escapeHtml(s: string) {
-  return s
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;');
+  return s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 }
 
 /**
- * Lightweight Python highlighting without external libraries.
- * Uses a "stash placeholders" strategy to avoid corrupting injected HTML.
+ * Robust lightweight highlighting using placeholders so no regex ever touches injected HTML.
  */
 function highlightPython(code: string) {
   let text = escapeHtml(code);
@@ -132,39 +128,44 @@ function highlightPython(code: string) {
   const stashed: Array<{ key: string; html: string }> = [];
   let stashId = 0;
 
-  const stash = (regex: RegExp, className: string) => {
+  // Use control chars in keys to avoid word-boundary regex matches.
+  const makeKey = () => `\u0001HL${stashId++}\u0002`;
+
+  const stashSimple = (regex: RegExp, wrap: (match: string) => string) => {
     text = text.replace(regex, (match) => {
-      const key = `@@@HL_${stashId++}@@@`;
-      stashed.push({ key, html: `<span class="${className}">${match}</span>` });
+      const key = makeKey();
+      stashed.push({ key, html: wrap(match) });
       return key;
     });
   };
 
-  // 1) Stash strings first (so # inside strings won't become comments)
-  stash(/("""[\s\S]*?"""|'''[\s\S]*?''')/g, 'text-emerald-300');
-  stash(/("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/g, 'text-emerald-300');
+  // 1) Stash strings first (triple quotes then single/double)
+  stashSimple(/("""[\s\S]*?"""|'''[\s\S]*?''')/g, (m) => `<span class="text-emerald-300">${m}</span>`);
+  stashSimple(/("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/g, (m) => `<span class="text-emerald-300">${m}</span>`);
 
-  // 2) Stash comments on the remaining text
-  stash(/(#.*)$/gm, 'text-slate-400');
+  // 2) Stash comments (after strings)
+  stashSimple(/(#.*)$/gm, (m) => `<span class="text-slate-400">${m}</span>`);
 
-  // 3) Highlight keywords / builtins / numbers on plain text (no HTML tags yet)
-  text = text.replace(
+  // 3) Stash keywords
+  stashSimple(
     /\b(from|import|as|return|for|in|if|elif|else|try|except|with|class|def|lambda|yield|await|async|True|False|None)\b/g,
-    '<span class="text-violet-300 font-medium">$1</span>'
+    (m) => `<span class="text-violet-300 font-medium">${m}</span>`
   );
 
-  text = text.replace(
+  // 4) Stash some builtins (light touch)
+  stashSimple(
     /\b(list|dict|set|tuple|str|int|float|bool|print|len|range)\b/g,
-    '<span class="text-sky-300">$1</span>'
+    (m) => `<span class="text-sky-300">${m}</span>`
   );
 
-  // Numbers (avoid touching digits inside identifiers)
-  text = text.replace(
-    /(^|[^\w])(\d+)(?=[^\w]|$)/g,
-    '$1<span class="text-amber-300">$2</span>'
-  );
+  // 5) Stash numbers (preserve the left separator)
+  text = text.replace(/(^|[^\w])(\d+)(?=[^\w]|$)/g, (match, p1: string, p2: string) => {
+    const key = makeKey();
+    stashed.push({ key, html: `<span class="text-amber-300">${p2}</span>` });
+    return `${p1}${key}`;
+  });
 
-  // 4) Restore stashed parts
+  // Restore all stashed HTML
   for (const item of stashed) {
     text = text.replaceAll(item.key, item.html);
   }
@@ -210,9 +211,7 @@ function CodeBlock({ code }: { code: string }) {
 
   return (
     <div className="my-8" dir="ltr">
-      {/* Code block container */}
       <div className="rounded-2xl border border-border overflow-hidden shadow-sm">
-        {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950">
           <div className="flex items-center gap-2">
             <span className="inline-flex h-2.5 w-2.5 rounded-full bg-rose-400/90" />
@@ -232,11 +231,9 @@ function CodeBlock({ code }: { code: string }) {
           </button>
         </div>
 
-        {/* Body */}
         <div className="bg-gradient-to-b from-slate-950 to-slate-900">
           <div className="overflow-x-auto">
             <div className="grid" style={{ gridTemplateColumns: 'auto 1fr' }}>
-              {/* Line numbers */}
               <div className="select-none px-4 py-4 text-right text-xs text-slate-500 border-r border-white/5">
                 {lines.map((_, i) => (
                   <div key={i} className="leading-6">
@@ -245,7 +242,6 @@ function CodeBlock({ code }: { code: string }) {
                 ))}
               </div>
 
-              {/* Code */}
               <pre className="m-0 px-4 py-4 overflow-visible">
                 <code
                   className="block font-mono text-[13px] leading-6 text-slate-100 whitespace-pre"
@@ -257,7 +253,6 @@ function CodeBlock({ code }: { code: string }) {
         </div>
       </div>
 
-      {/* Helper text */}
       <div className="mt-2 text-xs text-muted-foreground">Tip: Click “Copy” to copy the snippet.</div>
     </div>
   );
@@ -267,23 +262,19 @@ export default function BlogPostPage() {
   const [language, setLanguage] = useState<'en' | 'fa'>('fa');
   const post = doclingPost;
 
-  // Only title + body direction/alignment changes. UI controls stay unchanged.
+  // Only title + body alignment/direction changes. Other UI remains fixed.
   const isRtl = language === 'fa';
 
   const parts = useMemo(() => {
     if (language === 'en') {
-      return splitWithCode(
-        post.contentEn,
-        '## Short code example (RAG-friendly)\n\n',
-        'In this pattern,'
-      );
+      return splitWithCode(post.contentEn, '## Short code example (RAG-friendly)\n\n', 'In this pattern,');
     }
     return splitWithCode(post.contentFa, 'نمونه کد کوتاه (مناسب RAG)\n', 'در این الگو،');
   }, [language, post.contentEn, post.contentFa]);
 
   return (
     <main className="max-w-4xl mx-auto px-6 py-16">
-      {/* Back button (no translation) */}
+      {/* Back button (fixed) */}
       <Link
         to="/blog"
         className="inline-flex items-center gap-2 text-muted-foreground hover:text-accent transition-colors mb-8"
@@ -293,14 +284,13 @@ export default function BlogPostPage() {
       </Link>
 
       <article>
-        {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
               {post.category}
             </span>
 
-            {/* Language toggle (no translation required for button label) */}
+            {/* Toggle label stays fixed (no translation needed) */}
             <button
               onClick={() => setLanguage(language === 'en' ? 'fa' : 'en')}
               className="flex items-center gap-2 text-sm text-muted-foreground hover:text-accent transition-colors px-4 py-2 border border-border rounded-lg"
@@ -311,7 +301,7 @@ export default function BlogPostPage() {
             </button>
           </div>
 
-          {/* Only the title changes direction/alignment */}
+          {/* Only title changes direction/alignment */}
           <h1
             className="text-4xl mb-4"
             dir={isRtl ? 'rtl' : 'ltr'}
@@ -320,7 +310,7 @@ export default function BlogPostPage() {
             {language === 'en' ? post.titleEn : post.titleFa}
           </h1>
 
-          {/* Meta row stays unchanged */}
+          {/* Meta row stays fixed */}
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-1">
               <Calendar className="w-4 h-4" />
@@ -333,7 +323,6 @@ export default function BlogPostPage() {
           </div>
         </div>
 
-        {/* Top image */}
         {post.imageUrl && (
           <div className="mb-10">
             <img
@@ -345,9 +334,8 @@ export default function BlogPostPage() {
           </div>
         )}
 
-        {/* Post content */}
         <div className="prose prose-slate max-w-none">
-          {/* Text before code (only this part changes direction/alignment) */}
+          {/* Only post body changes direction/alignment */}
           <div
             className="text-muted-foreground leading-relaxed whitespace-pre-wrap"
             dir={isRtl ? 'rtl' : 'ltr'}
@@ -356,10 +344,8 @@ export default function BlogPostPage() {
             {renderTextWithLinks(parts.before)}
           </div>
 
-          {/* Styled code block */}
           {parts.code && <CodeBlock code={parts.code} />}
 
-          {/* Text after code (only this part changes direction/alignment) */}
           {parts.after && (
             <div
               className="text-muted-foreground leading-relaxed whitespace-pre-wrap"
