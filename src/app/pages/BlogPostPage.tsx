@@ -115,64 +115,6 @@ function splitWithCode(content: string, startMarker: string, endMarker: string) 
   };
 }
 
-function escapeHtml(s: string) {
-  return s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
-}
-
-/**
- * Robust lightweight highlighting using placeholders so no regex ever touches injected HTML.
- */
-function highlightPython(code: string) {
-  let text = escapeHtml(code);
-
-  const stashed: Array<{ key: string; html: string }> = [];
-  let stashId = 0;
-
-  // Use control chars in keys to avoid word-boundary regex matches.
-  const makeKey = () => `\u0001HL${stashId++}\u0002`;
-
-  const stashSimple = (regex: RegExp, wrap: (match: string) => string) => {
-    text = text.replace(regex, (match) => {
-      const key = makeKey();
-      stashed.push({ key, html: wrap(match) });
-      return key;
-    });
-  };
-
-  // 1) Stash strings first (triple quotes then single/double)
-  stashSimple(/("""[\s\S]*?"""|'''[\s\S]*?''')/g, (m) => `<span class="text-emerald-300">${m}</span>`);
-  stashSimple(/("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/g, (m) => `<span class="text-emerald-300">${m}</span>`);
-
-  // 2) Stash comments (after strings)
-  stashSimple(/(#.*)$/gm, (m) => `<span class="text-slate-400">${m}</span>`);
-
-  // 3) Stash keywords
-  stashSimple(
-    /\b(from|import|as|return|for|in|if|elif|else|try|except|with|class|def|lambda|yield|await|async|True|False|None)\b/g,
-    (m) => `<span class="text-violet-300 font-medium">${m}</span>`
-  );
-
-  // 4) Stash some builtins (light touch)
-  stashSimple(
-    /\b(list|dict|set|tuple|str|int|float|bool|print|len|range)\b/g,
-    (m) => `<span class="text-sky-300">${m}</span>`
-  );
-
-  // 5) Stash numbers (preserve the left separator)
-  text = text.replace(/(^|[^\w])(\d+)(?=[^\w]|$)/g, (match, p1: string, p2: string) => {
-    const key = makeKey();
-    stashed.push({ key, html: `<span class="text-amber-300">${p2}</span>` });
-    return `${p1}${key}`;
-  });
-
-  // Restore all stashed HTML
-  for (const item of stashed) {
-    text = text.replaceAll(item.key, item.html);
-  }
-
-  return text;
-}
-
 function renderTextWithLinks(text: string) {
   const urlRegex = /(https?:\/\/[^\s)]+)(?=\s|$)/g;
   const parts = text.split(urlRegex);
@@ -195,9 +137,167 @@ function renderTextWithLinks(text: string) {
   });
 }
 
+type PyTokenType = 'plain' | 'keyword' | 'builtin' | 'number' | 'string' | 'comment';
+
+const PY_KEYWORDS = new Set([
+  'from',
+  'import',
+  'as',
+  'return',
+  'for',
+  'in',
+  'if',
+  'elif',
+  'else',
+  'try',
+  'except',
+  'with',
+  'class',
+  'def',
+  'lambda',
+  'yield',
+  'await',
+  'async',
+  'True',
+  'False',
+  'None',
+]);
+
+const PY_BUILTINS = new Set(['list', 'dict', 'set', 'tuple', 'str', 'int', 'float', 'bool', 'print', 'len', 'range']);
+
+function isIdentStart(ch: string) {
+  return /[A-Za-z_]/.test(ch);
+}
+
+function isIdentPart(ch: string) {
+  return /[A-Za-z0-9_]/.test(ch);
+}
+
+function isDigit(ch: string) {
+  return /[0-9]/.test(ch);
+}
+
+function tokenizePython(code: string): Array<{ type: PyTokenType; text: string }> {
+  const tokens: Array<{ type: PyTokenType; text: string }> = [];
+  const n = code.length;
+  let i = 0;
+
+  const push = (type: PyTokenType, text: string) => {
+    if (text) tokens.push({ type, text });
+  };
+
+  while (i < n) {
+    const ch = code[i];
+
+    // Whitespace
+    if (ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r') {
+      let j = i + 1;
+      while (j < n && (code[j] === ' ' || code[j] === '\t' || code[j] === '\n' || code[j] === '\r')) j++;
+      push('plain', code.slice(i, j));
+      i = j;
+      continue;
+    }
+
+    // Comment
+    if (ch === '#') {
+      let j = i + 1;
+      while (j < n && code[j] !== '\n') j++;
+      push('comment', code.slice(i, j));
+      i = j;
+      continue;
+    }
+
+    // Strings: triple or single/double
+    if (ch === '"' || ch === "'") {
+      const quote = ch;
+      const isTriple = code[i + 1] === quote && code[i + 2] === quote;
+
+      if (isTriple) {
+        let j = i + 3;
+        while (j < n && !(code[j] === quote && code[j + 1] === quote && code[j + 2] === quote)) j++;
+        j = Math.min(n, j + 3);
+        push('string', code.slice(i, j));
+        i = j;
+        continue;
+      }
+
+      // Single/double with escapes
+      let j = i + 1;
+      while (j < n) {
+        if (code[j] === '\\') {
+          j += 2;
+          continue;
+        }
+        if (code[j] === quote) {
+          j++;
+          break;
+        }
+        j++;
+      }
+      push('string', code.slice(i, j));
+      i = j;
+      continue;
+    }
+
+    // Numbers
+    if (isDigit(ch)) {
+      let j = i + 1;
+      while (j < n && (isDigit(code[j]) || code[j] === '_')) j++;
+
+      // Optional decimal part
+      if (code[j] === '.' && isDigit(code[j + 1] ?? '')) {
+        j++; // dot
+        while (j < n && (isDigit(code[j]) || code[j] === '_')) j++;
+      }
+
+      push('number', code.slice(i, j));
+      i = j;
+      continue;
+    }
+
+    // Identifiers / keywords / builtins
+    if (isIdentStart(ch)) {
+      let j = i + 1;
+      while (j < n && isIdentPart(code[j])) j++;
+      const word = code.slice(i, j);
+
+      if (PY_KEYWORDS.has(word)) push('keyword', word);
+      else if (PY_BUILTINS.has(word)) push('builtin', word);
+      else push('plain', word);
+
+      i = j;
+      continue;
+    }
+
+    // Punctuation / operators
+    push('plain', ch);
+    i++;
+  }
+
+  return tokens;
+}
+
+function tokenClass(t: PyTokenType) {
+  switch (t) {
+    case 'keyword':
+      return 'text-violet-300 font-medium';
+    case 'builtin':
+      return 'text-sky-300';
+    case 'number':
+      return 'text-amber-300';
+    case 'string':
+      return 'text-emerald-300';
+    case 'comment':
+      return 'text-slate-400';
+    default:
+      return 'text-slate-100';
+  }
+}
+
 function CodeBlock({ code }: { code: string }) {
   const [copied, setCopied] = useState(false);
   const lines = useMemo(() => code.split('\n'), [code]);
+  const tokens = useMemo(() => tokenizePython(code), [code]);
 
   const onCopy = async () => {
     try {
@@ -243,10 +343,13 @@ function CodeBlock({ code }: { code: string }) {
               </div>
 
               <pre className="m-0 px-4 py-4 overflow-visible">
-                <code
-                  className="block font-mono text-[13px] leading-6 text-slate-100 whitespace-pre"
-                  dangerouslySetInnerHTML={{ __html: highlightPython(code) }}
-                />
+                <code className="block font-mono text-[13px] leading-6 whitespace-pre">
+                  {tokens.map((t, idx) => (
+                    <span key={idx} className={tokenClass(t.type)}>
+                      {t.text}
+                    </span>
+                  ))}
+                </code>
               </pre>
             </div>
           </div>
@@ -262,7 +365,7 @@ export default function BlogPostPage() {
   const [language, setLanguage] = useState<'en' | 'fa'>('fa');
   const post = doclingPost;
 
-  // Only title + body alignment/direction changes. Other UI remains fixed.
+  // Only title + post body direction/alignment changes. The rest of the UI stays fixed.
   const isRtl = language === 'fa';
 
   const parts = useMemo(() => {
@@ -274,7 +377,7 @@ export default function BlogPostPage() {
 
   return (
     <main className="max-w-4xl mx-auto px-6 py-16">
-      {/* Back button (fixed) */}
+      {/* Back button stays fixed */}
       <Link
         to="/blog"
         className="inline-flex items-center gap-2 text-muted-foreground hover:text-accent transition-colors mb-8"
@@ -290,7 +393,7 @@ export default function BlogPostPage() {
               {post.category}
             </span>
 
-            {/* Toggle label stays fixed (no translation needed) */}
+            {/* Toggle label stays fixed */}
             <button
               onClick={() => setLanguage(language === 'en' ? 'fa' : 'en')}
               className="flex items-center gap-2 text-sm text-muted-foreground hover:text-accent transition-colors px-4 py-2 border border-border rounded-lg"
@@ -301,7 +404,7 @@ export default function BlogPostPage() {
             </button>
           </div>
 
-          {/* Only title changes direction/alignment */}
+          {/* Only the title changes direction/alignment */}
           <h1
             className="text-4xl mb-4"
             dir={isRtl ? 'rtl' : 'ltr'}
@@ -335,7 +438,7 @@ export default function BlogPostPage() {
         )}
 
         <div className="prose prose-slate max-w-none">
-          {/* Only post body changes direction/alignment */}
+          {/* Only the post body changes direction/alignment */}
           <div
             className="text-muted-foreground leading-relaxed whitespace-pre-wrap"
             dir={isRtl ? 'rtl' : 'ltr'}
