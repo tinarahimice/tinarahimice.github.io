@@ -96,7 +96,7 @@ export default function HomePage() {
             Data Scientist / AI Engineer specializing in NLP and LLM-powered applications (Persian text processing, RAG, semantic search, and intelligent agents). I'm driven by continuous learning actively exploring new approaches and tools, prototyping quickly, and turning the best ideas into reliable, production-ready systems. I thrive in collaborative teams and prefer fast-evolving environments where I can take on new challenges and keep expanding my skill set.
           </p>
           <a
-            href="/Tina_Rahimi_Resume.pdf"
+            href={`${import.meta.env.BASE_URL}Tina_Rahimi_Resume.pdf`}
             download="Tina_Rahimi_Resume.pdf"
             className="inline-flex items-center gap-2 bg-accent text-accent-foreground px-6 py-3 rounded-lg hover:bg-accent/90 transition-colors"
           >
