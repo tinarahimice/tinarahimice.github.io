@@ -27,7 +27,7 @@ const doclingPost: BlogPost = {
     'Docling is an open-source library for preparing and processing documents and producing a standardized representation for downstream GenAI workflows such as RAG.',
   excerptFa:
     'Docling یک کتابخانه متن‌باز برای آماده‌سازی و پردازش اسناد مختلف است که خروجی استاندارد قابل استفاده برای فرایندهای GenAI مانند RAG تولید می‌کند.',
-  date: 'Nov 28, 2024',
+  date: 'Dec 27, 2025',
   readTime: '10 min',
   category: 'Tools',
   imageUrl: IMAGE_URL,
