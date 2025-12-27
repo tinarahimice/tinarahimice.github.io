@@ -115,8 +115,46 @@ function splitWithCode(content: string, startMarker: string, endMarker: string) 
   };
 }
 
+function escapeHtml(s: string) {
+  return s
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
+}
+
+function highlightPython(code: string) {
+  let html = escapeHtml(code);
+
+  // Strings (single, double, triple quotes)
+  html = html.replace(
+    /("""[\s\S]*?"""|'''[\s\S]*?'''|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/g,
+    '<span class="text-emerald-300">$1</span>'
+  );
+
+  // Comments
+  html = html.replace(/(#.*)$/gm, '<span class="text-slate-400">$1</span>');
+
+  // Keywords
+  html = html.replace(
+    /\b(from|import|as|return|for|in|if|elif|else|try|except|with|class|def|lambda|yield|await|async|True|False|None)\b/g,
+    '<span class="text-violet-300 font-medium">$1</span>'
+  );
+
+  // Builtins / common identifiers (light touch)
+  html = html.replace(
+    /\b(list|dict|set|tuple|str|int|float|bool|print|len|range)\b/g,
+    '<span class="text-sky-300">$1</span>'
+  );
+
+  // Numbers
+  html = html.replace(/\b(\d+)\b/g, '<span class="text-amber-300">$1</span>');
+
+  return html;
+}
+
 function CodeBlock({ code }: { code: string }) {
   const [copied, setCopied] = useState(false);
+  const lines = useMemo(() => code.split('\n'), [code]);
 
   const onCopy = async () => {
     try {
@@ -129,28 +167,62 @@ function CodeBlock({ code }: { code: string }) {
   };
 
   return (
-    <div className="my-6">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs text-muted-foreground">Python</span>
-        <button
-          type="button"
-          onClick={onCopy}
-          className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-accent transition-colors px-3 py-1 border border-border rounded-lg"
-          aria-label="Copy code"
-        >
-          {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-          <span>{copied ? 'Copied' : 'Copy'}</span>
-        </button>
+    <div className="my-8" dir="ltr">
+      {/* Container */}
+      <div className="rounded-2xl border border-border overflow-hidden shadow-sm">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex h-2.5 w-2.5 rounded-full bg-rose-400/90" />
+            <span className="inline-flex h-2.5 w-2.5 rounded-full bg-amber-300/90" />
+            <span className="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400/90" />
+            <span className="ml-3 text-xs font-medium text-slate-200">Python</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={onCopy}
+            className="inline-flex items-center gap-2 text-xs text-slate-200/90 hover:text-white transition-colors px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10"
+            aria-label="Copy code"
+          >
+            {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+            <span>{copied ? 'Copied' : 'Copy'}</span>
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="bg-gradient-to-b from-slate-950 to-slate-900">
+          <div className="overflow-x-auto">
+            <div className="grid" style={{ gridTemplateColumns: 'auto 1fr' }}>
+              {/* Line numbers */}
+              <div className="select-none px-4 py-4 text-right text-xs text-slate-500 border-r border-white/5">
+                {lines.map((_, i) => (
+                  <div key={i} className="leading-6">
+                    {i + 1}
+                  </div>
+                ))}
+              </div>
+
+              {/* Code */}
+              <pre className="m-0 px-4 py-4 overflow-visible">
+                <code
+                  className="block font-mono text-[13px] leading-6 text-slate-100 whitespace-pre"
+                  dangerouslySetInnerHTML={{ __html: highlightPython(code) }}
+                />
+              </pre>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <pre className="rounded-2xl border border-border bg-muted/40 p-4 overflow-x-auto">
-        <code className="font-mono text-sm leading-relaxed text-foreground" dir="ltr">
-          {code}
-        </code>
-      </pre>
+      {/* Subtle helper text */}
+      <div className="mt-2 text-xs text-muted-foreground">
+        Tip: Click “Copy” to copy the snippet.
+      </div>
     </div>
   );
 }
+
 
 export default function BlogPostPage() {
   const [language, setLanguage] = useState<'en' | 'fa'>('fa'); // Default to Persian
