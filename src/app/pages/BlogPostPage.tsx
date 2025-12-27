@@ -1,6 +1,6 @@
-import { useParams, Link } from 'react-router-dom';
-import { Calendar, Clock, ArrowLeft, Languages } from 'lucide-react';
-import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Calendar, Clock, ArrowLeft, Languages, Copy, Check } from 'lucide-react';
+import { useMemo, useState } from 'react';
 
 interface BlogPost {
   id: number;
@@ -13,466 +13,184 @@ interface BlogPost {
   date: string;
   readTime: string;
   category: string;
+  imageUrl?: string;
 }
 
-const blogPosts: BlogPost[] = [
-  {
-    id: 1,
-    titleEn: 'Phoenix',
-    titleFa: 'Phoenix',
-    excerptEn: 'A comprehensive guide to understanding and working with Phoenix framework. Learn about real-time features, channels, and practical applications.',
-    excerptFa: 'راهنمای جامع برای درک و کار با فریمورک Phoenix. در مورد ویژگی‌های بلادرنگ، کانال‌ها و کاربردهای عملی بیاموزید.',
-    contentEn: `Phoenix is a web development framework written in Elixir that enables developers to build scalable and maintainable web applications. This comprehensive guide covers the essential concepts and best practices for working with Phoenix.
+const IMAGE_URL =
+  'https://github.com/docling-project/docling/raw/main/docs/assets/docling_processing.png';
 
-## What is Phoenix?
+const doclingPost: BlogPost = {
+  id: 2,
+  titleEn: 'Docling',
+  titleFa: 'Docling',
+  excerptEn:
+    'Docling is an open-source library for preparing and processing documents and producing a standardized representation for downstream GenAI workflows such as RAG.',
+  excerptFa:
+    'Docling یک کتابخانه متن‌باز برای آماده‌سازی و پردازش اسناد مختلف است که خروجی استاندارد قابل استفاده برای فرایندهای GenAI مانند RAG تولید می‌کند.',
+  date: 'Nov 28, 2024',
+  readTime: '10 min',
+  category: 'Tools',
+  imageUrl: IMAGE_URL,
 
-Phoenix is built on top of the Elixir programming language and leverages the Erlang VM (BEAM) to provide exceptional performance and reliability. It follows the Model-View-Controller (MVC) pattern and emphasizes developer productivity.
+  contentEn: `Docling is an open-source library for preparing and processing different kinds of documents (PDF, Word, HTML, etc.). It can turn their structure, text, and metadata into a standardized and usable representation. This standard representation is known as **DoclingDocument**, and it becomes the foundation for many downstream tasks such as semantic search, AI-assisted question answering, and more.
 
-## Key Features
+## Chunking in Docling
+Docling stands out as a superior choice for the chunking component in RAG architectures because it operates on a deep understanding of a document's actual structure rather than simply slicing text into arbitrary, fixed-length segments. This distinction is vital for the overall quality of retrieval and the final response, as traditional chunking often breaks semantic boundaries—splitting a sentence in the middle of a heading or a crucial explanation—which leads to ambiguous embeddings and poor retrieval performance. By recognizing sections, headings, captions, and table contexts, Docling ensures that each chunk remains a complete "conceptual unit." This structural awareness results in far more accurate embeddings, allows similarity searches to return truly relevant results, and provides the language model with a clean, coherent context to answer from.
 
-### Real-time Capabilities
-
-Phoenix Channels provide built-in support for WebSocket connections, enabling real-time features like:
-- Live chat applications
-- Collaborative editing tools
-- Real-time notifications
-- Live dashboards and monitoring
-
-### LiveView
-
-Phoenix LiveView allows you to build rich, real-time user experiences without writing JavaScript. Server-rendered HTML updates automatically in response to user interactions and server events.
-
-### Performance
-
-Thanks to the Erlang VM, Phoenix applications can handle millions of connections with minimal resource usage. The framework is designed for:
-- Low latency responses
-- High concurrency
-- Fault tolerance
-- Hot code reloading
-
-## Core Concepts
-
-### Contexts
-
-Contexts organize related functionality and provide a clear API for interacting with your application's business logic. They help maintain clean separation of concerns.
-
-### Ecto
-
-Ecto is Phoenix's database wrapper and query language. It provides:
-- Schema definitions
-- Query composition
-- Migrations
-- Changesets for data validation
-
-### Router
-
-The Phoenix router maps incoming requests to controllers and defines the structure of your application's URL space.
-
-## Getting Started
-
-To create a new Phoenix application:
-
-1. Install Elixir and Phoenix
-2. Generate a new project
-3. Configure your database
-4. Start the development server
-5. Begin building your features
-
-## Best Practices
-
-**Organize with Contexts**: Group related functionality into contexts for better code organization.
-
-**Use Changesets**: Leverage Ecto changesets for robust data validation and error handling.
-
-**Embrace Concurrency**: Take advantage of Elixir's concurrency model with processes and GenServers.
-
-**Test Thoroughly**: Write comprehensive tests using ExUnit and Phoenix's testing helpers.
-
-## Production Deployment
-
-Phoenix applications are designed for production deployment with:
-- Easy containerization with Docker
-- Support for clustering and distribution
-- Built-in monitoring and telemetry
-- Seamless deployment to platforms like Fly.io and Gigalixir
-
-## Conclusion
-
-Phoenix combines the productivity of modern web frameworks with the performance and reliability of the Erlang VM. Whether you're building a simple web application or a complex real-time system, Phoenix provides the tools and patterns you need to succeed.`,
-    contentFa: `Phoenix یک فریمورک توسعه وب است که با زبان Elixir نوشته شده و به توسعه‌دهندگان امکان می‌دهد برنامه‌های وب مقیاس‌پذیر و قابل نگهداری بسازند. این راهنمای جامع مفاهیم و بهترین شیوه‌های کار با Phoenix را پوشش می‌دهد.
-
-## Phoenix چیست؟
-
-Phoenix بر روی زبان برنامه‌نویسی Elixir ساخته شده و از ماشین مجازی Erlang (BEAM) برای ارائه عملکرد و قابلیت اطمینان استثنایی استفاده می‌کند. از الگوی Model-View-Controller (MVC) پیروی می‌کند و بر بهره‌وری توسعه‌دهنده تأکید دارد.
-
-## ویژگی‌های کلیدی
-
-### قابلیت‌های بلادرنگ
-
-کانال‌های Phoenix پشتیبانی داخلی برای اتصالات WebSocket ارائه می‌دهند و ویژگی‌های بلادرنگ مانند موارد زیر را فعال می‌کنند:
-- برنامه‌های چت زنده
-- ابزارهای ویرایش مشارکتی
-- اعلان‌های بلادرنگ
-- داشبوردهای زنده و نظارت
-
-### LiveView
-
-Phoenix LiveView به شما امکان می‌دهد تجربیات کاربری غنی و بلادرنگ بدون نوشتن JavaScript بسازید. HTML رندر شده در سرور به طور خودکار در پاسخ به تعاملات کاربر و رویدادهای سرور به‌روزرسانی می‌شود.
-
-### عملکرد
-
-به لطف ماشین مجازی Erlang، برنامه‌های Phoenix می‌توانند میلیون‌ها اتصال را با استفاده حداقلی از منابع مدیریت کنند. فریمورک برای موارد زیر طراحی شده است:
-- پاسخ‌های با تأخیر کم
-- همزمانی بالا
-- تحمل خطا
-- بارگذاری مجدد کد داغ
-
-## مفاهیم اصلی
-
-### Contexts
-
-Contextها عملکردهای مرتبط را سازماندهی می‌کنند و یک API واضح برای تعامل با منطق تجاری برنامه شما ارائه می‌دهند. آنها به حفظ جداسازی واضح نگرانی‌ها کمک می‌کنند.
-
-### Ecto
-
-Ecto پوشش پایگاه داده و زبان پرس‌وجوی Phoenix است. ارائه می‌دهد:
-- تعاریف طرحواره
-- ترکیب پرس‌وجو
-- مهاجرت‌ها
-- Changesets برای اعتبارسنجی داده
-
-### Router
-
-روتر Phoenix درخواست‌های ورودی را به کنترلرها نگاشت می‌کند و ساختار فضای URL برنامه شما را تعریف می‌کند.
-
-## شروع کار
-
-برای ایجاد یک برنامه Phoenix جدید:
-
-1. Elixir و Phoenix را نصب کنید
-2. یک پروژه جدید تولید کنید
-3. پایگاه داده خود را پیکربندی کنید
-4. سرور توسعه را راه‌اندازی کنید
-5. شروع به ساخت ویژگی‌های خود کنید
-
-## بهترین شیوه‌ها
-
-**با Contexts سازماندهی کنید**: عملکردهای مرتبط را در contextها گروه‌بندی کنید تا سازماندهی کد بهتر شود.
-
-**از Changesets استفاده کنید**: از Ecto changesets برای اعتبارسنجی قوی داده و مدیریت خطا استفاده کنید.
-
-**همزمانی را بپذیرید**: از مدل همزمانی Elixir با فرآیندها و GenServers بهره ببرید.
-
-**به طور کامل تست کنید**: تست‌های جامع را با استفاده از ExUnit و کمک‌کننده‌های تست Phoenix بنویسید.
-
-## استقرار تولید
-
-برنامه‌های Phoenix برای استقرار تولید طراحی شده‌اند با:
-- کانتینریزه‌سازی آسان با Docker
-- پشتیبانی از خوشه‌بندی و توزیع
-- نظارت و تله‌متری داخلی
-- استقرار یکپارچه در پلتفرم‌هایی مانند Fly.io و Gigalixir
-
-## نتیجه‌گیری
-
-Phoenix بهره‌وری فریمورک‌های وب مدرن را با عملکرد و قابلیت اطمینان ماشین مجازی Erlang ترکیب می‌کند. چه در حال ساخت یک برنامه وب ساده باشید یا یک سیستم بلادرنگ پیچیده، Phoenix ابزارها و الگوهایی را که برای موفقیت نیاز دارید فراهم می‌کند.`,
-    date: 'Dec 15, 2024',
-    readTime: '8 min',
-    category: 'Web Development',
-  },
-  {
-    id: 2,
-    titleEn: 'Docling',
-    titleFa: 'Docling',
-    excerptEn: 'Exploring document processing and management with Docling. Practical solutions for text extraction, parsing, and analysis.',
-    excerptFa: 'بررسی پردازش و مدیریت اسناد با Docling. راه‌حل‌های عملی برای استخراج متن، تجزیه و تحلیل.',
-    contentEn: `Docling is a powerful document processing library that simplifies working with various document formats. This guide explores its capabilities and shows you how to leverage it for efficient document management.
-
-## What is Docling?
-
-Docling provides a unified interface for processing different document types including PDFs, Word documents, spreadsheets, and more. It handles the complexity of format-specific parsing and extraction, allowing you to focus on your application logic.
-
-## Key Features
-
-### Multi-Format Support
-
-Docling works seamlessly with:
-- PDF documents
-- Microsoft Word (.docx, .doc)
-- Excel spreadsheets
-- PowerPoint presentations
-- Plain text and markdown files
-- HTML documents
-
-### Text Extraction
-
-Extract text content from documents while preserving:
-- Document structure
-- Formatting information
-- Metadata
-- Tables and lists
-
-### Document Parsing
-
-Parse complex document structures including:
-- Headers and footers
-- Tables of contents
-- Page numbers
-- Sections and chapters
-
-## Core Capabilities
-
-### Metadata Extraction
-
-Retrieve document metadata such as:
-- Author information
-- Creation and modification dates
-- Document properties
-- Keywords and tags
-
-### Content Analysis
-
-Analyze document content for:
-- Text statistics (word count, character count)
-- Language detection
-- Readability scores
-- Keyword extraction
-
-### Document Conversion
-
-Convert between different formats:
-- PDF to text
-- Word to markdown
-- HTML to plain text
-- Cross-format conversions
-
-## Practical Applications
-
-### Document Management Systems
-
-Build robust document management systems with features like:
-- Automatic document indexing
-- Full-text search
-- Document classification
-- Version control
-
-### Data Extraction Pipelines
-
-Create data extraction workflows for:
-- Invoice processing
-- Contract analysis
-- Research paper mining
-- Report generation
-
-### Content Analysis
-
-Perform content analysis tasks:
-- Sentiment analysis on documents
-- Topic modeling
-- Entity extraction
-- Summary generation
-
-## Best Practices
-
-**Handle Errors Gracefully**: Document processing can fail for various reasons. Implement proper error handling and validation.
-
-**Optimize for Performance**: Process large documents efficiently by using streaming and chunking techniques.
-
-**Preserve Quality**: Maintain document quality during extraction and conversion by configuring appropriate settings.
-
-**Test with Various Formats**: Different document formats may behave differently. Test with a diverse set of documents.
-
-## Integration
-
-Docling integrates well with:
-- Cloud storage services (S3, Google Drive)
-- Database systems
-- Search engines (Elasticsearch, Solr)
-- Machine learning pipelines
-
-## Advanced Features
-
-### OCR Support
-
-Extract text from scanned documents and images using optical character recognition.
-
-### Table Extraction
-
-Intelligently extract and structure tabular data from documents.
-
-### Layout Analysis
-
-Analyze document layout to understand structure and hierarchy.
-
-## Conclusion
-
-Docling simplifies the complex task of document processing, making it accessible for developers to build sophisticated document-centric applications. Whether you're building a document management system, data extraction pipeline, or content analysis tool, Docling provides the capabilities you need.`,
-    contentFa: `Docling یک کتابخانه قدرتمند پردازش اسناد است که کار با فرمت‌های مختلف اسناد را ساده می‌کند. این راهنما قابلیت‌های آن را بررسی می‌کند و به شما نشان می‌دهد چگونه از آن برای مدیریت کارآمد اسناد استفاده کنید.
-
-## Docling چیست؟
-
-Docling یک رابط یکپارچه برای پردازش انواع مختلف اسناد از جمله PDFها، اسناد Word، صفحات گسترده و موارد دیگر ارائه می‌دهد. پیچیدگی تجزیه و استخراج خاص فرمت را مدیریت می‌کند و به شما امکان می‌دهد بر منطق برنامه خود تمرکز کنید.
-
-## ویژگی‌های کلیدی
-
-### پشتیبانی چند فرمتی
-
-Docling به طور یکپارچه با موارد زیر کار می‌کند:
-- اسناد PDF
-- Microsoft Word (.docx, .doc)
-- صفحات گسترده Excel
-- ارائه‌های PowerPoint
-- فایل‌های متن ساده و markdown
-- اسناد HTML
-
-### استخراج متن
-
-محتوای متنی را از اسناد استخراج کنید در حالی که موارد زیر را حفظ می‌کنید:
-- ساختار سند
-- اطلاعات قالب‌بندی
-- فراداده
-- جداول و لیست‌ها
-
-### تجزیه سند
-
-ساختارهای پیچیده سند از جمله موارد زیر را تجزیه کنید:
-- سرصفحه و پاصفحه
-- فهرست مطالب
-- شماره صفحات
-- بخش‌ها و فصل‌ها
-
-## قابلیت‌های اصلی
-
-### استخراج فراداده
-
-فراداده سند مانند موارد زیر را بازیابی کنید:
-- اطلاعات نویسنده
-- تاریخ ایجاد و تغییر
-- ویژگی‌های سند
-- کلمات کلیدی و برچسب‌ها
-
-### تحلیل محتوا
-
-محتوای سند را برای موارد زیر تجزیه و تحلیل کنید:
-- آمار متن (تعداد کلمات، تعداد کاراکترها)
-- تشخیص زبان
-- امتیازهای خوانایی
-- استخراج کلمات کلیدی
-
-### تبدیل سند
-
-بین فرمت‌های مختلف تبدیل کنید:
-- PDF به متن
-- Word به markdown
-- HTML به متن ساده
-- تبدیل‌های بین فرمتی
-
-## کاربردهای عملی
-
-### سیستم‌های مدیریت اسناد
-
-سیستم‌های مدیریت اسناد قوی با ویژگی‌هایی مانند موارد زیر بسازید:
-- نمایه‌سازی خودکار اسناد
-- جستجوی تمام متن
-- طبقه‌بندی اسناد
-- کنترل نسخه
-
-### خطوط لوله استخراج داده
-
-گردش‌های کاری استخراج داده برای موارد زیر ایجاد کنید:
-- پردازش فاکتور
-- تحلیل قرارداد
-- استخراج مقالات تحقیقاتی
-- تولید گزارش
-
-### تحلیل محتوا
-
-وظایف تحلیل محتوا را انجام دهید:
-- تحلیل احساسات در اسناد
-- مدل‌سازی موضوع
-- استخراج موجودیت
-- تولید خلاصه
-
-## بهترین شیوه‌ها
-
-**خطاها را به خوبی مدیریت کنید**: پردازش اسناد می‌تواند به دلایل مختلف شکست بخورد. مدیریت خطا و اعتبارسنجی مناسب را پیاده‌سازی کنید.
-
-**برای عملکرد بهینه‌سازی کنید**: اسناد بزرگ را به طور کارآمد با استفاده از تکنیک‌های streaming و chunking پردازش کنید.
-
-**کیفیت را حفظ کنید**: کیفیت سند را در طول استخراج و تبدیل با پیکربندی تنظیمات مناسب حفظ کنید.
-
-**با فرمت‌های مختلف تست کنید**: فرمت‌های مختلف سند ممکن است رفتار متفاوتی داشته باشند. با مجموعه متنوعی از اسناد تست کنید.
-
-## یکپارچگی
-
-Docling به خوبی با موارد زیر یکپارچه می‌شود:
-- سرویس‌های ذخیره‌سازی ابری (S3، Google Drive)
-- سیستم‌های پایگاه داده
-- موتورهای جستجو (Elasticsearch، Solr)
-- خطوط لوله یادگیری ماشین
-
-## ویژگی‌های پیشرفته
-
-### پشتیبانی OCR
-
-متن را از اسناد اسکن‌شده و تصاویر با استفاده از تشخیص نوری کاراکتر استخراج کنید.
-
-### استخراج جدول
-
-داده‌های جدولی را به طور هوشمند از اسناد استخراج و ساختاربندی کنید.
-
-### تحلیل چیدمان
-
-چیدمان سند را برای درک ساختار و سلسله‌مراتب تجزیه و تحلیل کنید.
-
-## نتیجه‌گیری
-
-Docling وظیفه پیچیده پردازش اسناد را ساده می‌کند و آن را برای توسعه‌دهندگان قابل دسترس می‌کند تا برنامه‌های پیچیده متمرکز بر اسناد بسازند. چه در حال ساخت یک سیستم مدیریت اسناد، خط لوله استخراج داده یا ابزار تحلیل محتوا باشید، Docling قابلیت‌هایی را که نیاز دارید فراهم می‌کند.`,
-    date: 'Nov 28, 2024',
-    readTime: '10 min',
-    category: 'Tools',
-  },
-];
+Beyond just dividing text, Docling’s real strength lies in how it preserves context through rich metadata. Each chunk isn't just a raw string of text; it carries its own "identity," including its heading path and its specific position within the document hierarchy. This is a game-changer for RAG pipelines because it allows the system to feed the chunk to the model along with its parent headers, helping the AI understand the exact context in which the information was written. By grounding the text in its original structural environment, Docling significantly reduces the risk of hallucinations and ensures the model’s answers are contextually sound. Furthermore, the HybridChunker feature elegantly balances the need for semantic integrity with the technical constraints of embedding models. It respects document boundaries while simultaneously monitoring token limits, ensuring chunks are neither too massive to process nor so fragmented that they lose their essential meaning.
+
+Ultimately, Docling is far more than a simple parsing tool; it was engineered from the ground up with Generative AI pipelines in mind. Through its standardized DoclingDocument output and intuitive APIs for chunking and contextualization, it seamlessly integrates into the workflow from raw document to vector database. By producing text that is inherently ready for embedding and minimizing the "noise" typically found in automated document extraction, Docling acts as a sophisticated data-preparation layer. This focus on structural integrity and meaningful segmentation transforms the RAG process, leading to higher retrieval precision and much more reliable AI-generated answers.
+
+Docling fits easily into RAG pipelines:
+Document → DoclingDocument → Chunking → Embedding → Vector DB → Retrieval → LLM
+
+## Short code example (RAG-friendly)
+
+from docling.document_converter import DocumentConverter
+from docling.chunking import HybridChunker
+
+source = "document.pdf"
+
+converter = DocumentConverter()
+doc = converter.convert(source).document
+
+chunker = HybridChunker()
+chunks = list(chunker.chunk(doc))
+
+texts_for_embedding = [
+    chunker.contextualize(chunk)
+    for chunk in chunks
+]
+
+In this pattern, the contextualize method plays a pivotal role by generating chunked text that is inherently enriched with its original structural context. This ensures that the output is perfectly tailored for embedding processes and immediate storage within vector databases, providing a seamless transition from raw data to searchable knowledge.
+The primary advantage of using Docling in a RAG architecture lies in its ability to produce meaningful segments rather than arbitrary, "blind" cuts. By maintaining the inherent structure of the document and respecting the token limits of modern language models, it effectively minimizes noise during the retrieval phase and significantly boosts the accuracy of the final generated answers. Ultimately, Docling proves to be much more than a standard chunking utility; it functions as a comprehensive data-preparation layer for RAG, bridging the gap between complex raw documents and high-performance AI systems.
+
+Reference:
+https://github.com/docling-project/docling`,
+
+  contentFa: `کتابخانه Docling یک ابزار متن‌باز برای آماده‌سازی و پردازش اسناد مختلف (PDF، Word، HTML و غیره) است که می‌تواند ساختار، متن و متادیتای آن‌ها را به صورت نمایش استاندارد و قابل‌استفاده تبدیل کند. این نمایش استاندارد به نام DoclingDocument شناخته می‌شود و پایه‌ی بسیاری از پردازش‌های بعدی مثل جستجوی معنایی، پاسخ‌گویی با هوش مصنوعی و… است.
+کتابخانه Docling را می‌توان یکی از بهترین انتخاب‌ها برای مرحله چانکینگ در معماری RAG دانست، چرا که این ابزار به جای بریدن کورکورانه متن در طول‌های ثابت، فرآیند تکه‌تکه کردن را بر اساس فهم عمیق از ساختار واقعی سند انجام می‌دهد. این رویکرد هوشمندانه مستقیماً روی کیفیت بازیابی اطلاعات و دقت پاسخ نهایی اثر می‌گذارد، زیرا در سیستم‌های RAG اگر مرزهای معنایی رعایت نشود و متن مثلاً در وسط یک تیتر یا توضیح حساس شکسته شود، بردارهای معنایی (Embedding) مبهم شده و دقت جستجو به شدت افت می‌کند. Docling با تکیه بر ساختار سند مثل بخش‌بندی‌ها، تیترها و حتی کانتکست جداول، هر چانک را به یک واحد مفهومی کامل تبدیل می‌کند که نتیجه آن تولید Embeddingهای دقیق‌تر، نتایج جستجوی مرتبط‌تر و در نهایت ارائه یک محتوای تمیز و منسجم به مدل زبانی است.
+
+فراتر از بحث جداسازی متن، هوشمندی Docling در حفظ کانتکست از طریق متادیتا نهفته است؛ به این معنا که هر تکه متن تولید شده، شناسنامه‌ای همراه خود دارد که مسیر تیترهای بالادستی و موقعیت دقیقش در سند را مشخص می‌کند. این موضوع در پروژه‌های هوش مصنوعی حیاتی است، چون می‌توان متن را همراه با سلسله‌مراتب موضوعی‌اش به مدل ارائه داد تا مدل دقیقاً بفهمد این اطلاعات در چه زمینه‌ای نوشته شده است. این رویکرد نه تنها درک مدل را بالا می‌برد، بلکه به شکل چشم‌گیری پدیده توهم یا Hallucination را کاهش می‌دهد. در کنار این‌ها، قابلیت HybridChunker در این کتابخانه توازن ظریفی میان دنیای معنا و محدودیت‌های فنی ایجاد می‌کند؛ یعنی در عین حال که به مرزهای ساختاری سند وفادار می‌ماند، مراقب است که طول هر چانک با محدودیت توکن مدل‌های Embedding یا LLM کاملاً هماهنگ باشد تا اطلاعات نه آن‌قدر حجیم شوند که پردازششان مختل شود و نه آن‌قدر کوچک که معنای خود را از دست بدهند.
+
+در نهایت، چیزی که Docling را از یک ابزار پارس کردن ساده متمایز می‌کند، طراحی اختصاصی آن برای خط لوله‌های GenAI از همان ابتدای کار است. این کتابخانه با ارائه خروجی استاندارد DoclingDocument و در اختیار گذاشتن APIهای مشخص برای چانکینگ و غنی‌سازی متن، فرآیند آماده‌سازی داده‌ها را بسیار ساده کرده است. در واقع Docling می‌تواند به راحتی در مسیر تبدیل یک سند خام به بردارهای آماده ذخیره‌سازی در دیتابیس‌های گراف یا وکتور قرار بگیرد و با تولید متن‌های آماده برای Embedding، نویزهای معمول در بازیابی اطلاعات را حذف کرده و دقت پاسخ‌گویی سیستم را به سطح جدیدی برساند.
+
+Docling خیلی راحت داخل pipelineهای RAG جا می‌گیرد:
+Document → DoclingDocument → Chunking → Embedding → Vector DB → Retrieval → LLM
+
+نمونه کد کوتاه (مناسب RAG)
+from docling.document_converter import DocumentConverter
+from docling.chunking import HybridChunker
+
+source = "document.pdf"
+
+converter = DocumentConverter()
+doc = converter.convert(source).document
+
+chunker = HybridChunker()
+chunks = list(chunker.chunk(doc))
+
+texts_for_embedding = [
+    chunker.contextualize(chunk)
+    for chunk in chunks
+]
+
+در این الگو، استفاده از قابلیت contextualize نقشی کلیدی ایفا می‌کند؛ این متد متن هر چانک را با بافت و ساختار اصلی سند پیوند می‌دهد تا خروجی نهایی به شکلی کاملاً بهینه و آماده برای فرآیند Embedding و ذخیره‌سازی در پایگاه‌داده‌های برداری (Vector Database) درآید. آنچه Docling را در دنیای RAG متمایز می‌کند، توانایی آن در ایجاد چانک‌های معنادار به جای برش‌های تصادفی و کورکورانه است. این ابزار با حفظ دقیق ساختار سند و رعایت هوشمندانه محدودیت‌های توکن در مدل‌های زبانی، نویز موجود در مرحله بازیابی (Retrieval) را به شدت کاهش داده و دقت پاسخ‌های نهایی را بالا می‌برد. به همین دلیل، Docling فراتر از یک ابزار چانکینگ ساده، در واقع به عنوان یک لایه استراتژیک برای آماده‌سازی داده‌ها عمل می‌کند که کیفیت و هوشمندی کل زنجیره RAG را تضمین می‌نماید.
+رفرنس
+https://github.com/docling-project/docling`,
+};
+
+function splitWithCode(content: string, startMarker: string, endMarker: string) {
+  const start = content.indexOf(startMarker);
+  if (start === -1) return { before: content, code: '', after: '' };
+
+  const codeStart = start + startMarker.length;
+  const end = content.indexOf(endMarker, codeStart);
+  if (end === -1) return { before: content, code: '', after: '' };
+
+  return {
+    before: content.slice(0, codeStart).trimEnd(),
+    code: content.slice(codeStart, end).trim(),
+    after: content.slice(end).trimStart(),
+  };
+}
+
+function CodeBlock({ code }: { code: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const onCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1200);
+    } catch {
+      // Clipboard might not be available in some environments; fail silently.
+    }
+  };
+
+  return (
+    <div className="my-6">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs text-muted-foreground">Python</span>
+        <button
+          type="button"
+          onClick={onCopy}
+          className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-accent transition-colors px-3 py-1 border border-border rounded-lg"
+          aria-label="Copy code"
+        >
+          {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+          <span>{copied ? 'Copied' : 'Copy'}</span>
+        </button>
+      </div>
+
+      <pre className="rounded-2xl border border-border bg-muted/40 p-4 overflow-x-auto">
+        <code className="font-mono text-sm leading-relaxed text-foreground" dir="ltr">
+          {code}
+        </code>
+      </pre>
+    </div>
+  );
+}
 
 export default function BlogPostPage() {
-  const { id } = useParams<{ id: string }>();
-  const [language, setLanguage] = useState<'en' | 'fa'>('en');
-
-  const post = blogPosts.find((p) => p.id === Number(id));
-
-  if (!post) {
-    return (
-      <main className="max-w-4xl mx-auto px-6 py-16">
-        <div className="text-center">
-          <h1 className="text-4xl mb-4">Post Not Found</h1>
-          <Link to="/blog" className="text-accent hover:underline">
-            ← Back to Blog
-          </Link>
-        </div>
-      </main>
-    );
-  }
-
+  const [language, setLanguage] = useState<'en' | 'fa'>('fa'); // Default to Persian
+  const post = doclingPost;
   const isRtl = language === 'fa';
+
+  const parts = useMemo(() => {
+    if (language === 'en') {
+      return splitWithCode(
+        post.contentEn,
+        '## Short code example (RAG-friendly)\n\n',
+        'In this pattern,'
+      );
+    }
+    return splitWithCode(
+      post.contentFa,
+      'نمونه کد کوتاه (مناسب RAG)\n',
+      'در این الگو،'
+    );
+  }, [language, post.contentEn, post.contentFa]);
 
   return (
     <main className="max-w-4xl mx-auto px-6 py-16">
-      {/* Back Button */}
+      {/* Back button */}
       <Link
         to="/blog"
         className="inline-flex items-center gap-2 text-muted-foreground hover:text-accent transition-colors mb-8"
       >
         <ArrowLeft className="w-4 h-4" />
-        <span>Back to Blog</span>
+        <span>{language === 'fa' ? 'بازگشت به بلاگ' : 'Back to Blog'}</span>
       </Link>
 
-      {/* Header */}
       <article>
+        {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
               {post.category}
             </span>
+
             <button
               onClick={() => setLanguage(language === 'en' ? 'fa' : 'en')}
               className="flex items-center gap-2 text-sm text-muted-foreground hover:text-accent transition-colors px-4 py-2 border border-border rounded-lg"
@@ -487,7 +205,10 @@ export default function BlogPostPage() {
             {language === 'en' ? post.titleEn : post.titleFa}
           </h1>
 
-          <div className="flex items-center gap-4 text-sm text-muted-foreground" dir={isRtl ? 'rtl' : 'ltr'}>
+          <div
+            className="flex items-center gap-4 text-sm text-muted-foreground"
+            dir={isRtl ? 'rtl' : 'ltr'}
+          >
             <div className="flex items-center gap-1">
               <Calendar className="w-4 h-4" />
               <span>{post.date}</span>
@@ -499,15 +220,42 @@ export default function BlogPostPage() {
           </div>
         </div>
 
-        {/* Content */}
+        {/* Top image */}
+        {post.imageUrl && (
+          <div className="mb-10">
+            <img
+              src={post.imageUrl}
+              alt="Docling processing"
+              className="w-full rounded-2xl border border-border"
+              loading="lazy"
+            />
+          </div>
+        )}
+
+        {/* Post content */}
         <div className="prose prose-slate max-w-none">
-          <div 
+          {/* Text before code */}
+          <div
             className="text-muted-foreground leading-relaxed whitespace-pre-wrap"
             dir={isRtl ? 'rtl' : 'ltr'}
             style={{ textAlign: 'justify' }}
           >
-            {language === 'en' ? post.contentEn : post.contentFa}
+            {parts.before}
           </div>
+
+          {/* Styled code block */}
+          {parts.code && <CodeBlock code={parts.code} />}
+
+          {/* Text after code */}
+          {parts.after && (
+            <div
+              className="text-muted-foreground leading-relaxed whitespace-pre-wrap"
+              dir={isRtl ? 'rtl' : 'ltr'}
+              style={{ textAlign: 'justify' }}
+            >
+              {parts.after}
+            </div>
+          )}
         </div>
       </article>
     </main>
