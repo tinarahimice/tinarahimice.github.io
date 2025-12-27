@@ -15,21 +15,11 @@ interface BlogPost {
 const blogPosts: BlogPost[] = [
   {
     id: 1,
-    titleEn: 'Phoenix',
-    titleFa: 'Phoenix',
-    excerptEn: 'A comprehensive guide to understanding and working with Phoenix framework. Learn about real-time features, channels, and practical applications.',
-    excerptFa: 'راهنمای جامع برای درک و کار با فریمورک Phoenix. در مورد ویژگی‌های بلادرنگ، کانال‌ها و کاربردهای عملی بیاموزید.',
-    date: 'Dec 15, 2024',
-    readTime: '8 min',
-    category: 'Web Development',
-  },
-  {
-    id: 2,
     titleEn: 'Docling',
     titleFa: 'Docling',
     excerptEn: 'Exploring document processing and management with Docling. Practical solutions for text extraction, parsing, and analysis.',
     excerptFa: 'بررسی پردازش و مدیریت اسناد با Docling. راه‌حل‌های عملی برای استخراج متن، تجزیه و تحلیل.',
-    date: 'Nov 28, 2024',
+    date: 'Dec 27, 2025',
     readTime: '10 min',
     category: 'Tools',
   },
