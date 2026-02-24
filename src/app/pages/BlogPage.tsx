@@ -9,7 +9,8 @@ type PostIndexItem = {
   titleFa: string;
   excerptEn: string;
   excerptFa: string;
-  date: string;
+  date?: string;
+  createdAt?: string;
   readTime: string;
   category: string;
   imageUrl?: string;
@@ -24,6 +25,21 @@ function withBase(path: string) {
   return `${b}/${p}`;
 }
 
+
+function formatPostDate(post: PostIndexItem) {
+  if (post.createdAt) {
+    const d = new Date(post.createdAt);
+    if (!Number.isNaN(d.getTime())) {
+      return new Intl.DateTimeFormat('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+      }).format(d);
+    }
+  }
+
+  return post.date ?? '';
+}
 export default function BlogPage() {
   const [data, setData] = useState<PostsIndex | null>(null);
   const [error, setError] = useState<string>('');
@@ -90,7 +106,7 @@ export default function BlogPage() {
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <Calendar className="w-4 h-4" />
-                    <span>{post.date}</span>
+                    <span>{formatPostDate(post)}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Clock className="w-4 h-4" />
