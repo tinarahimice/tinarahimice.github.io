@@ -6,9 +6,14 @@ type CmsPost = {
   id: number;
   slug: string;
   category: string;
-  date: string;
+  date?: string;
+  createdAt?: string;
   readTime: string;
   imageUrl?: string;
+  references?: {
+    en?: Array<{ display_name: string; url: string }>;
+    fa?: Array<{ display_name: string; url: string }>;
+  };
   en: { title: string; excerpt: string; content: string };
   fa: { title: string; excerpt: string; content: string };
 };
@@ -23,19 +28,89 @@ function withBase(path: string) {
   return `${b}/${p}`;
 }
 
-function splitWithCode(content: string, startMarker: string, endMarker: string) {
-  const start = content.indexOf(startMarker);
-  if (start === -1) return { before: content, code: '', after: '' };
+type ContentBlock =
+  | { type: 'text'; value: string }
+  | { type: 'code'; value: string }
+  | { type: 'image'; src: string };
 
-  const codeStart = start + startMarker.length;
-  const end = content.indexOf(endMarker, codeStart);
-  if (end === -1) return { before: content, code: '', after: '' };
+function ensureLineBreakAroundSpecialTokens(content: string) {
+  const tokenRegex = /(\[img_(?:local|url):\s*[^\]]+\]|```)/g;
+  return content.replace(tokenRegex, '\n$1\n');
+}
 
-  return {
-    before: content.slice(0, codeStart).trimEnd(),
-    code: content.slice(codeStart, end).trim(),
-    after: content.slice(end).trimStart(),
+function parseContentBlocks(content: string): ContentBlock[] {
+  const normalized = ensureLineBreakAroundSpecialTokens(content);
+  const lines = normalized.split('\n');
+  const blocks: ContentBlock[] = [];
+  let inCode = false;
+  let codeLines: string[] = [];
+  let textLines: string[] = [];
+
+  const pushText = () => {
+    const value = textLines.join('\n').trim();
+    if (value) blocks.push({ type: 'text', value });
+    textLines = [];
   };
+
+  const pushCode = () => {
+    const value = codeLines.join('\n').trim();
+    if (value) blocks.push({ type: 'code', value });
+    codeLines = [];
+  };
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed === '```') {
+      if (inCode) {
+        pushCode();
+        inCode = false;
+      } else {
+        pushText();
+        inCode = true;
+      }
+      continue;
+    }
+
+    if (inCode) {
+      codeLines.push(line);
+      continue;
+    }
+
+    const localMatch = trimmed.match(/^\[img_local:\s*(.+)\]$/);
+    if (localMatch) {
+      pushText();
+      blocks.push({ type: 'image', src: withBase(localMatch[1].trim()) });
+      continue;
+    }
+
+    const urlMatch = trimmed.match(/^\[img_url:\s*(.+)\]$/);
+    if (urlMatch) {
+      pushText();
+      blocks.push({ type: 'image', src: urlMatch[1].trim() });
+      continue;
+    }
+
+    textLines.push(line);
+  }
+
+  if (inCode) pushCode();
+  pushText();
+
+  return blocks;
+}
+
+function formatPostDate(post: CmsPost) {
+  if (post.createdAt) {
+    const d = new Date(post.createdAt);
+    if (!Number.isNaN(d.getTime())) {
+      return new Intl.DateTimeFormat('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+      }).format(d);
+    }
+  }
+  return post.date ?? '';
 }
 
 function renderTextWithLinks(text: string) {
@@ -346,15 +421,16 @@ export default function BlogPostPage() {
 
   const isRtl = language === 'fa';
 
-  const parts = useMemo(() => {
-    if (!post) return { before: '', code: '', after: '' };
-
+  const contentBlocks = useMemo(() => {
+    if (!post) return [] as ContentBlock[];
     const content = language === 'en' ? post.en.content : post.fa.content;
+    return parseContentBlocks(content);
+  }, [language, post]);
 
-    if (language === 'en') {
-      return splitWithCode(content, '## Short code example (RAG-friendly)\n\n', 'In this pattern,');
-    }
-    return splitWithCode(content, 'نمونه کد کوتاه (مناسب RAG)\n', 'در این الگو،');
+  const postDate = useMemo(() => (post ? formatPostDate(post) : ''), [post]);
+  const references = useMemo(() => {
+    if (!post?.references) return [] as Array<{ display_name: string; url: string }>;
+    return language === 'en' ? (post.references.en ?? []) : (post.references.fa ?? []);
   }, [language, post]);
 
   if (error) {
@@ -431,7 +507,7 @@ export default function BlogPostPage() {
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-1">
               <Calendar className="w-4 h-4" />
-              <span>{post.date}</span>
+              <span>{postDate}</span>
             </div>
             <div className="flex items-center gap-1">
               <Clock className="w-4 h-4" />
@@ -452,23 +528,55 @@ export default function BlogPostPage() {
         )}
 
         <div className="prose prose-slate max-w-none">
-          <div
-            className="text-muted-foreground leading-relaxed whitespace-pre-wrap"
-            dir={isRtl ? 'rtl' : 'ltr'}
-            style={{ textAlign: isRtl ? 'justify' : 'left' }}
-          >
-            {renderTextWithLinks(parts.before)}
-          </div>
+          {contentBlocks.map((block, idx) => {
+            if (block.type === 'code') return <CodeBlock key={idx} code={block.value} />;
 
-          {parts.code && <CodeBlock code={parts.code} />}
+            if (block.type === 'image') {
+              return (
+                <div key={idx} className="my-8">
+                  <img
+                    src={block.src}
+                    alt="Embedded post media"
+                    className="w-full rounded-2xl border border-border"
+                    loading="lazy"
+                  />
+                </div>
+              );
+            }
 
-          {parts.after && (
+            return (
+              <div
+                key={idx}
+                className="text-muted-foreground leading-relaxed whitespace-pre-wrap"
+                dir={isRtl ? 'rtl' : 'ltr'}
+                style={{ textAlign: isRtl ? 'justify' : 'left' }}
+              >
+                {renderTextWithLinks(block.value)}
+              </div>
+            );
+          })}
+
+          {references.length > 0 && (
             <div
-              className="text-muted-foreground leading-relaxed whitespace-pre-wrap"
+              className="mt-10 border-t border-border pt-6"
               dir={isRtl ? 'rtl' : 'ltr'}
-              style={{ textAlign: isRtl ? 'justify' : 'left' }}
+              style={{ textAlign: isRtl ? 'right' : 'left' }}
             >
-              {renderTextWithLinks(parts.after)}
+              <h3 className="text-lg mb-3">{language === 'en' ? 'References' : 'رفرنس‌ها'}</h3>
+              <ul className="space-y-2 text-muted-foreground">
+                {references.map((ref, i) => (
+                  <li key={`${ref.url}-${i}`}>
+                    <a
+                      href={ref.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-accent underline underline-offset-4 hover:opacity-90"
+                    >
+                      {ref.display_name}
+                    </a>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
         </div>
