@@ -6,16 +6,18 @@ export default function HomePage() {
       title: 'Data Scientist (AI Engineer)',
       company: 'IraniCard',
       location: 'Isfahan, Iran',
-      period: 'Dec 2024 - Present',
+      period: 'Dec 2024 - Jan 2026',
       responsibilities: [
-        'Designed and productionized intelligent agent workflows to automate key steps in order processing, improving system reliability and reducing manual intervention.',
-        'Partnered with product, operations, and engineering teams to integrate AI-driven features into existing platforms and iterate based on real user/operational feedback.',
-        'Built and refined ML-driven decision support to enhance user purchase decision-making (e.g., scoring/segmentation/ranking logic aligned with business goals).',
+        'Developed machine learning models for flight ticket price forecasting using large-scale tabular datasets, performing feature engineering, feature selection, model evaluation, and performance analysis to support pricing insights and decision-making workflows. (Pateh)',
+        'Designed automated evaluation and monitoring pipelines for forecasting models using Apache Airflow and Metabase, enabling performance tracking, analytical reporting, and model behavior analysis. (Pateh)',
+        'Built intelligent automation workflows for customer order processing using Selenium and LLM-based agents, reducing manual operational effort and improving process efficiency. (IraniCard)',
+        'Developed an AI-powered flight ticket purchasing agent capable of automating parts of the search and booking workflow. (Pateh)',
+        'Built a RAG-based customer support chatbot leveraging historical customer service conversations as a knowledge base to improve response relevance and support efficiency. (IraniCard)',
       ],
     },
     {
       title: 'Data Scientist (NLP Developer)',
-      company: 'SamIoray ICT Co.',
+      company: 'Saminray ICT Co.',
       location: 'Remote',
       period: 'Jan 2024 - Dec 2024',
       responsibilities: [
@@ -46,11 +48,11 @@ export default function HomePage() {
     },
     {
       category: 'Machine Learning & Deep Learning',
-      items: ['Scikit-learn', 'PyTorch', 'Transformers (HF)'],
+      items: ['Scikit-learn', 'PyTorch'],
     },
     {
       category: 'LLM / Generative AI & RAG',
-      items: ['LlamaIndex', 'Hugging Face Datasets', 'OpenAI API', 'Ollama', 'RAG pipelines', 'embeddings', 'prompt engineering'],
+      items: ['LlamaIndex', 'LangChain', 'LangGraph', 'Transformers (Hugging Face)', 'OpenAI API', 'Ollama', 'prompt engineering'],
     },
     {
       category: 'Backend & Serving',
@@ -66,11 +68,11 @@ export default function HomePage() {
     },
     {
       category: 'Databases & Search',
-      items: ['SQL Server', 'MongoDB', 'Elasticsearch'],
+      items: ['SQL Server', 'MongoDB', 'Redis', 'Elasticsearch'],
     },
     {
       category: 'Data Engineering & MLOps Tooling',
-      items: ['Airflow', 'Git', 'Docker'],
+      items: ['Airflow', 'MLflow', 'Git', 'Docker'],
     },
     {
       category: 'Testing / Automation',
@@ -82,7 +84,7 @@ export default function HomePage() {
     },
     {
       category: 'Core Knowledge',
-      items: ['Machine Learning', 'NLP', 'Applied Linear Algebra'],
+      items: ['Machine Learning', 'Deep Learning', 'NLP', 'Applied Linear Algebra'],
     },
   ];
 
@@ -93,7 +95,7 @@ export default function HomePage() {
         <div>
           <h1 className="text-4xl mb-4">Tina Rahimi<br />Data Scientist / AI Engineer</h1>
           <p className="text-muted-foreground mb-6 leading-relaxed max-w-xl text-justify">
-            Data Scientist / AI Engineer specializing in NLP and LLM-powered applications (Persian text processing, RAG, semantic search, and intelligent agents). I'm driven by continuous learning actively exploring new approaches and tools, prototyping quickly, and turning the best ideas into reliable, production-ready systems. I thrive in collaborative teams and prefer fast-evolving environments where I can take on new challenges and keep expanding my skill set.
+            Data Scientist / AI Engineer with experience building machine learning models, AI-powered applications, and intelligent decision-support systems. Skilled in Python, SQL, machine learning, NLP, and LLM-based architectures, including RAG, semantic search, and agentic AI systems. Experienced in developing end-to-end AI solutions, from data processing and feature engineering to model deployment, monitoring, and evaluation. Passionate about continuous learning, rapid experimentation, and delivering reliable, production-ready AI systems in collaborative and fast-paced environments.
           </p>
           <a
             href={`${import.meta.env.BASE_URL}Tina_Rahimi_Resume.pdf`}
@@ -169,7 +171,7 @@ export default function HomePage() {
             <span className="text-sm text-muted-foreground mt-1 md:mt-0">Nov 2020 - Sep 2024</span>
           </div>
           <ul className="space-y-1 text-muted-foreground">
-            <li>• GPA: 16.93/20 (≈ 3.386/4.0)</li>
+            <li>• GPA: 16.93/20</li>
             <li>• Core Areas: Artificial Intelligence & Software Engineering</li>
             <li>• Bachelor's Thesis: LLM-based Security Vulnerability Detection</li>
           </ul>
