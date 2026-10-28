@@ -3,6 +3,16 @@ import { Mail, MapPin, Phone, Briefcase, GraduationCap, Download, Github } from 
 export default function HomePage() {
   const experiences = [
     {
+      title: 'Data Scientist',
+      company: 'Alopeyk',
+      period: 'Aug 2026 - Present',
+      responsibilities: [
+        'Analyze logistics and operational data using Python, pandas, and SQL to evaluate service performance, identify bottlenecks, and support business decision-making.',
+        'Develop analytical workflows, reports, and visualizations using Python and Matplotlib to assess operational trends and communicate findings.',
+        'Develop an LLM-powered analytics assistant using LlamaIndex and Streamlit, with Metabase integration for natural-language querying and exploration of business data.',
+      ],
+    },
+    {
       title: 'Data Scientist (AI Engineer)',
       company: 'IraniCard',
       location: 'Isfahan, Iran',
@@ -139,7 +149,7 @@ export default function HomePage() {
               <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-3">
                 <div>
                   <h3 className="text-xl mb-1">{exp.title}</h3>
-                  <p className="text-muted-foreground">{exp.company} • {exp.location}</p>
+                  <p className="text-muted-foreground">{exp.company}{exp.location && ` • ${exp.location}`}</p>
                 </div>
                 <span className="text-sm text-muted-foreground mt-1 md:mt-0">{exp.period}</span>
               </div>
