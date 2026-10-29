@@ -5,6 +5,7 @@ export default function HomePage() {
     {
       title: 'Data Scientist',
       company: 'Alopeyk',
+      location: 'Tehran, Iran',
       period: 'Aug 2026 - Present',
       responsibilities: [
         'Analyze logistics and operational data using Python, pandas, and SQL to evaluate service performance, identify bottlenecks, and support business decision-making.',
